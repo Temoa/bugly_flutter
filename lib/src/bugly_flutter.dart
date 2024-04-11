@@ -5,7 +5,6 @@ class BuglyFlutter {
 
   static const MethodChannel _methods = MethodChannel("temoa/bugly_flutter");
 
-  static bool _isDebug = true;
   static bool _postCaught = false;
 
   BuglyFlutter._();
@@ -29,7 +28,6 @@ class BuglyFlutter {
   }) async {
     assert((Platform.isAndroid && androidAppId.isNotEmpty) || (Platform.isIOS && iOSAppId.isNotEmpty));
     assert(_postCaught, "Run postCaughtException first.");
-    _isDebug = debug;
     return _methods.invokeMethod("initCrashReport", {
       "androidAppId": androidAppId,
       "iOSAppId": iOSAppId,
@@ -57,7 +55,6 @@ class BuglyFlutter {
   static void postCaughtException<T>(
     T Function() callback, {
     FlutterExceptionHandler? onException,
-    String? filterRegExp,
     bool debugUpload = false,
   }) {
     Isolate.current.addErrorListener(RawReceivePort((dynamic pair) {
@@ -81,39 +78,15 @@ class BuglyFlutter {
       _filterAndUploadException(
         debugUpload,
         onException,
-        filterRegExp,
         FlutterErrorDetails(exception: error, stack: stackTrace),
       );
     });
   }
 
   /// from https://github.com/crazecoder/flutter_bugly
-  static void _filterAndUploadException(debugUpload, handler, filterRegExp, FlutterErrorDetails details) {
-    if (!_filterException(debugUpload, handler, filterRegExp, details)) {
-      uploadException(message: details.exception.toString(), detail: details.stack.toString());
-    }
-  }
-
-  /// from https://github.com/crazecoder/flutter_bugly
-  static bool _filterException(bool debugUpload, FlutterExceptionHandler? handler, String? filterRegExp, FlutterErrorDetails details) {
-    if (handler != null) {
-      handler(details);
-    } else {
-      FlutterError.onError?.call(details);
-    }
-    // Debug 时默认不上传异常。
-    if (!debugUpload && _isDebug) {
-      return true;
-    }
-    // 异常过滤。
-    if (filterRegExp != null) {
-      RegExp reg = RegExp(filterRegExp);
-      Iterable<Match> matches = reg.allMatches(details.exception.toString());
-      if (matches.isNotEmpty) {
-        return true;
-      }
-    }
-    return false;
+  static void _filterAndUploadException(bool debugUpload, FlutterExceptionHandler? handler, FlutterErrorDetails details) {
+    if (!debugUpload) return;
+    uploadException(message: details.exception.toString(), detail: details.stack.toString());
   }
 
   /// from https://github.com/crazecoder/flutter_bugly
