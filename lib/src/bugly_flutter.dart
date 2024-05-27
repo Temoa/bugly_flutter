@@ -85,6 +85,11 @@ class BuglyFlutter {
 
   /// from https://github.com/crazecoder/flutter_bugly
   static void _filterAndUploadException(bool debugUpload, FlutterExceptionHandler? handler, FlutterErrorDetails details) {
+    if (handler != null) {
+      handler(details);
+    } else {
+      FlutterError.onError?.call(details);
+    }
     if (!debugUpload) return;
     uploadException(message: details.exception.toString(), detail: details.stack.toString());
   }
